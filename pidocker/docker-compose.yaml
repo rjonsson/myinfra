@@ -28,26 +28,16 @@ services:
       - ./data/homebridge:/homebridge
     network_mode: host
 
-  nginx-www:
-    image: nginx:stable
-    container_name: nginx
-    restart: unless-stopped
-    volumes:
-      - ./data/nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./data/nginx/conf.d:/etc/nginx/conf.d
-      - ./data/nginx/www:/var/www
-    ports:
-      - '8070:8070'
-
-  nginx-proxy:
-    container_name: nginx-proxy
-    image: nginx:stable
-    restart: unless-stopped
-    volumes:
-      - ./data/nginx-proxy:/etc/nginx/conf.d
-    ports:
-      - '8001:8001'
-      - '8002:8002'
+## Samsung QN90 is not currently supported in HA
+#  nginx-proxy:
+#    container_name: nginx-proxy
+#    image: nginx:stable
+#    restart: unless-stopped
+#    volumes:
+#      - ./data/nginx-proxy/nginx.conf:/etc/nginx/nginx.conf
+#    ports:
+#      - '8001:8001'
+#      - '8002:8002'
 
   ad-blocker:
     container_name: pihole
