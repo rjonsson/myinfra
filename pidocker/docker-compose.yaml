@@ -3,13 +3,13 @@ services:
 
   deconz:
     container_name: deconz
-    image: marthoc/deconz:stable
+    image: deconzcommunity/deconz:stable 
     restart: unless-stopped
     environment:
       - TZ=Europe/Stockholm
       - DECONZ_DEVICE=/dev/ttyACM0
     volumes:
-      - ./data/deconz:/root/.local/share/dresden-elektronik/deCONZ
+      - ./data/deconz:/opt/deCONZ
     network_mode: host
     devices:
       - /dev/ttyACM0
