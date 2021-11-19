@@ -43,7 +43,7 @@ services:
         ipv4_address: 172.20.0.20
         aliases:
         - traefik
-    # Don't know what this is but it makes "network_mode: host" containers work sometimes
+    # Helps routing services outside of docker i.e. containers with network_mode: host
     extra_hosts:
       - host.docker.internal:172.20.0.1
     labels:
@@ -53,7 +53,7 @@ services:
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.middlewares=authelia@docker"
 
-  # Create new passwords with docker run authelia/authelia:latest authelia hash-password 'password
+  # Create new passwords with `docker run authelia/authelia:latest authelia hash-password 'password'`
   sso:
     container_name: authelia
     image: authelia/authelia
@@ -308,8 +308,18 @@ services:
       - "traefik.http.routers.plex.entrypoints=websecure"
       - "traefik.http.routers.plex.rule=Host(`plex.${DOMAIN}`)"
       - "traefik.http.services.plex.loadbalancer.server.port=32400"
-      - "traefik.http.middlewares.plex.headers.customFrameOptionsValue=SAMEORIGIN"
 
+  monitor:
+    container_name: uptime-kuma
+    image: louislam/uptime-kuma:1
+    restart: unless-stopped
+    volumes:
+      - ./data/uptime_kuma:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.monitor.entrypoints=websecure"
+      - "traefik.http.routers.monitor.rule=Host(`monitor.${DOMAIN}`)"
+      - "traefik.http.services.monitor.loadbalancer.server.port=3001"
 
 networks:
   default:
