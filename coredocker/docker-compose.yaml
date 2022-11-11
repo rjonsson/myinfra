@@ -1,16 +1,19 @@
 version: '3.6'
 services:
 
-  reverse-proxy:
+  traefik:
     container_name: traefik
     image: traefik:v2.4
     restart: unless-stopped
     command:
       - "--providers.docker=true"
       - "--accesslog=true"
+      - "--log.format=json"
+      - "--accesslog.format=json"
       - "--api"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker=true"
+      - "--providers.file.filename=/dynamic.yaml"
       # Entrypoints
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
@@ -34,6 +37,7 @@ services:
       - "LOOPIA_API_PASSWORD=${LOOPIA_API_PASSWORD}"
     volumes:
       - ./data/cert:/letsencrypt
+      - ./data/traefik/dynamic.yaml:/dynamic.yaml
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "80:80"
@@ -54,9 +58,9 @@ services:
       - "traefik.http.routers.traefik.middlewares=authelia@docker"
 
   # Create new passwords with `docker run authelia/authelia:latest authelia hash-password 'password'`
-  sso:
+  authelia:
     container_name: authelia
-    image: authelia/authelia
+    image: authelia/authelia:4.35
     restart: unless-stopped
     environment:
       - PUID=1000
@@ -77,9 +81,9 @@ services:
       - 'traefik.http.middlewares.authelia-basic.forwardauth.trustForwardHeader=true'
       - 'traefik.http.middlewares.authelia-basic.forwardauth.authResponseHeaders=Remote-User, Remote-Groups, Remote-Name, Remote-Email'
 
-  dashboard:
+  heimdall:
     container_name: heimdall
-    image: ghcr.io/linuxserver/heimdall
+    image: ghcr.io/linuxserver/heimdall:2.4.13
     restart: unless-stopped
     environment:
       - TZ=Europe/Stockholm
@@ -97,7 +101,7 @@ services:
 
   unifi-controller:
     container_name: unifi
-    image: ghcr.io/linuxserver/unifi-controller
+    image: ghcr.io/linuxserver/unifi-controller:7.2.92
     restart: unless-stopped
     environment:
       - TZ=Europe/Stockholm
@@ -107,6 +111,7 @@ services:
       - MEM_STARTUP=1024M
     volumes:
       - ./data/unifi:/config
+      - /var/log/containers/unifi:/var/log/unifi
     ports:
       - 3478:3478/udp
       - 10001:10001/udp
@@ -125,7 +130,7 @@ services:
 
   homeassistant:
     container_name: hass
-    image: "ghcr.io/home-assistant/home-assistant:stable"
+    image: ghcr.io/home-assistant/home-assistant:2022.8
     restart: unless-stopped
     environment:
       - TZ=Europe/Stockholm
@@ -140,9 +145,10 @@ services:
       - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
       - "traefik.http.middlewares.homeassistant.headers.customFrameOptionsValue=SAMEORIGIN"
 
+  # https://hub.docker.com/r/nodered/node-red
   node-red:
     container_name: node-red
-    image: nodered/node-red
+    image: nodered/node-red:3.0.2
     restart: unless-stopped
     environment:
       - TZ=Europe/Stockholm
@@ -159,7 +165,7 @@ services:
 
   mqtt:
     container_name: mosquitto
-    image: eclipse-mosquitto
+    image: eclipse-mosquitto:2.0
     restart: unless-stopped
     environment:
       - TZ=Europe/Stockholm
@@ -168,9 +174,10 @@ services:
     ports:
       - 1883:1883/tcp
 
-  vpn:
+  # https://hub.docker.com/r/linuxserver/wireguard
+  wireguard:
     container_name: wireguard
-    image: ghcr.io/linuxserver/wireguard
+    image: ghcr.io/linuxserver/wireguard:1.0.20210914
     restart: unless-stopped
     environment:
       - TZ=Europe/Stockholm
@@ -228,11 +235,12 @@ services:
       - "traefik.http.services.radarr.loadbalancer.server.scheme=http"
       - "traefik.http.services.radarr.loadbalancer.server.port=7878"
 
+  # https://hub.docker.com/r/linuxserver/transmission
   transmission:
-    image: ghcr.io/linuxserver/transmission
+    image: ghcr.io/linuxserver/transmission:version-3.00-r5
     container_name: transmission
     restart: unless-stopped
-    depends_on: [ "vpn" ]
+    depends_on: [ "wireguard" ]
     environment:
       - TZ=Europe/Stockholm
       - PUID=1000
@@ -241,26 +249,28 @@ services:
     volumes:
       - ./data/transmission/config:/config
       - /mnt/nfs/download:/downloads
-    network_mode: "service:vpn"
+    network_mode: "service:wireguard"
 
+  # https://hub.docker.com/r/linuxserver/jackett
   jackett:
     container_name: jackett
-    image: ghcr.io/linuxserver/jackett
+    image: ghcr.io/linuxserver/jackett:0.20.1768
     restart: unless-stopped
-    depends_on: [ "vpn" ]
+    depends_on: [ "wireguard" ]
     environment:
       - TZ=Europe/Stockholm
       - PUID=1000
       - PGID=1000
     volumes:
       - ./data/jackett:/config
-    network_mode: "service:vpn"
+    network_mode: "service:wireguard"
 
+  # https://hub.docker.com/r/linuxserver/sonarr
   sonarr:
     container_name: sonarr
-    image: ghcr.io/linuxserver/sonarr
+    image: ghcr.io/linuxserver/sonarr:3.0.9
     restart: unless-stopped
-    depends_on: [ "vpn" ]
+    depends_on: [ "wireguard" ]
     environment:
       - TZ=Europe/Stockholm
       - PUID=1000
@@ -269,13 +279,13 @@ services:
       - ./data/sonarr:/config
       - /mnt/nfs/tv:/tv 
       - /mnt/nfs/download:/downloads 
-    network_mode: "service:vpn"
+    network_mode: "service:wireguard"
 
   radarr:
     container_name: radarr
-    image: ghcr.io/linuxserver/radarr
+    image: ghcr.io/linuxserver/radarr:4.1.0
     restart: unless-stopped
-    depends_on: [ "vpn" ]
+    depends_on: [ "wireguard" ]
     environment:
       - TZ=Europe/London
       - PUID=1000
@@ -284,11 +294,11 @@ services:
       - ./data/radarr:/config
       - /mnt/nfs/movies:/movies
       - /mnt/nfs/download:/downloads
-    network_mode: "service:vpn"
+    network_mode: "service:wireguard"
 
   plex:
     container_name: plex
-    image: ghcr.io/linuxserver/plex
+    image: ghcr.io/linuxserver/plex:1.28.1
     restart: unless-stopped
     environment:
       - PUID=1000
@@ -309,7 +319,7 @@ services:
       - "traefik.http.routers.plex.rule=Host(`plex.${DOMAIN}`)"
       - "traefik.http.services.plex.loadbalancer.server.port=32400"
 
-  monitor:
+  uptime-kuma:
     container_name: uptime-kuma
     image: louislam/uptime-kuma:1
     restart: unless-stopped
@@ -318,7 +328,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.monitor.entrypoints=websecure"
-      - "traefik.http.routers.monitor.rule=Host(`monitor.${DOMAIN}`)"
+      - "traefik.http.routers.monitor.rule=Host(`uptime.${DOMAIN}`)"
       - "traefik.http.services.monitor.loadbalancer.server.port=3001"
 
 networks:
