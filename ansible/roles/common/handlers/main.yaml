@@ -1,0 +1,19 @@
+---
+- name: timedatectl - unmask and enable
+  systemd:
+    name:  systemd-timesyncd
+    enabled: yes
+    masked: no
+  listen: timedatectl unmask
+
+- name: timedatectl - restart timdated
+  systemd:
+    name:  systemd-timesyncd
+    state: restarted
+  listen: timedatectl enable ntp
+  notify: timedatectl enable ntp step 2
+
+- name: timedatectl - enable ntp
+  command: timedatectl set-ntp true
+  listen: timedatectl enable ntp step 2
+...

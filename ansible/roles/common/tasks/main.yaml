@@ -1,0 +1,41 @@
+---
+  - name: Ensure hostname set
+    hostname:
+      name: "{{ inventory_hostname }}"
+    when: not inventory_hostname|trim is match('(\d{1,3}\.){3}\d{1,3}')
+
+  - name: Ensure hostname is in /etc/hosts
+    lineinfile:
+      dest: /etc/hosts
+      regexp: "^{{ ansible_default_ipv4.address }}.+$"
+      line: "{{ ansible_default_ipv4.address }} {{ ansible_hostname }}"
+
+  - name: Ensure hostname is in /etc/hosts
+    lineinfile:
+      dest: /etc/hosts
+      regexp: "^127.0.1.1.+$"
+      line: "127.0.1.1 {{ ansible_hostname }}"
+
+#  - name: Configure pending packages
+#    command: dpkg --configure -a
+#    changed_when: false
+
+  - name: Install system packages and utils
+    apt:
+      name:
+        - vim
+        - git
+        - htop
+        - net-tools
+        - nfs-common
+        - systemd-timesyncd
+      update_cache: true
+      cache_valid_time: 5400
+    notify: timedatectl unmask
+
+  - name: Setup timesync config
+    template:
+      src: timesyncd.conf.j2
+      dest: /etc/systemd/timesyncd.conf
+    notify: timedatectl enable ntp
+...

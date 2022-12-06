@@ -1,0 +1,9 @@
+---
+- name: deploy and configure docker hosts 
+  hosts: all
+
+  roles:
+    - { role: common, when: "'common' in group_names", become: yes }
+    - { role: docker, when: "'docker' in group_names", become: yes }
+
+...

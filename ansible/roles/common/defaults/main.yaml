@@ -1,0 +1,12 @@
+---
+ntp_servers:
+  - 0.se.pool.ntp.org
+  - 1.se.pool.ntp.org
+  - 2.se.pool.ntp.org
+  - 3.se.pool.ntp.org
+ntp_fallback_servers:
+  - 0.se.pool.ntp.org
+  - 1.se.pool.ntp.org
+  - 2.se.pool.ntp.org
+  - 3.se.pool.ntp.org
+...
