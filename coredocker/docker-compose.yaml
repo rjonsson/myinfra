@@ -204,6 +204,7 @@ services:
       - SYS_MODULE
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv6.conf.all.disable_ipv6=0
     labels:
       - "traefik.enable=true"
       # transmission endpoint
@@ -309,7 +310,6 @@ services:
       - ./data/plex:/config
       - /mnt/nfs/tv:/tv
       - /mnt/nfs/movies:/movies
-      - /mnt/ramdisk:/ramdisk
     #devices:
     #  - /dev/dri:/dev/dri
     network_mode: host
