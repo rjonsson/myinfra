@@ -1,4 +1,13 @@
-## Containers used:
+# Coredocker
+
+### Add backup cronjob
+```sh
+# Create crontab for root and add rsync-script
+crontab -u root -e
+(crontab -l && echo "0 6 * * * /myinfra/coredocker/rsync.sh") | crontab -
+```
+
+### Containers used:
 * traefik
   - https://traefik.io/
   - https://github.com/traefik/traefik
@@ -46,18 +55,3 @@
   - https://github.com/louislam/uptime-kuma
   - https://hub.docker.com/r/louislam/uptime-kuma
 
-## Set up backup
-rsync \
-  --archive \
-  --verbose \
-  --delete \
-  --ignore-existing \
-  corepve:/tank/server/backup/coredocker/data/node-red \
-  /myinfra/coredocker/data/node-red
-
-# Add backup cronjob
-
-## Build curator and install cronjob
-CURATOR_DIR="/myinfra/coredocker/images/curator"
-docker build ${CURATOR_DIR} -t curator
-(crontab -l && echo "0 0 0 0 0 ${CURATOR_DIR}/curator.sh") | crontab -
