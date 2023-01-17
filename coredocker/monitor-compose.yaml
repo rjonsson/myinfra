@@ -1,0 +1,91 @@
+# meant to be used with traefik/authelia docker-compose.yaml as base
+services:
+  unifi-controller:
+    container_name: unifi
+    image: ghcr.io/linuxserver/unifi-controller:7.3.76
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Stockholm
+      - PUID=1000
+      - PGID=1000
+      - MEM_LIMIT=1024
+      - MEM_STARTUP=1024
+    volumes:
+      - ./data/unifi:/config
+      - /var/log/containers/unifi:/var/log/unifi
+    ports:
+      - 3478:3478/udp
+      - 10001:10001/udp
+      - 8080:8080
+      - 1900:1900/udp 
+      - 8843:8843 
+      - 8880:8880
+      - 6789:6789
+      - 5514:5514/udp
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.unifi.rule=Host(`unifi.${DOMAIN}`)"
+      - "traefik.http.routers.unifi.entrypoints=websecure"
+      - "traefik.http.services.unifi.loadbalancer.server.scheme=https"
+      - "traefik.http.services.unifi.loadbalancer.server.port=8443"
+
+  uptime-kuma:
+    container_name: uptime-kuma
+    image: louislam/uptime-kuma:1
+    restart: unless-stopped
+    volumes:
+      - uptime-kuma-storage:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.monitor.entrypoints=websecure"
+      - "traefik.http.routers.monitor.rule=Host(`uptime.${DOMAIN}`)"
+      - "traefik.http.services.monitor.loadbalancer.server.port=3001"
+
+#  influxdb:
+#    container_name: influxdb
+#    image: influxdb:latest
+#    ports:
+#      - '8086:8086'
+#    volumes:
+#      - influxdb-storage:/var/lib/influxdb
+#    environment:
+#      - INFLUXDB_DB=db0
+#      - INFLUXDB_ADMIN_USER=${INFLUXDB_USERNAME}
+#      - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_PASSWORD}
+#
+#  chronograf:
+#    container_name: chronograf
+#    image: chronograf:latest
+#    volumes:
+#      - chronograf-storage:/var/lib/chronograf
+#    environment:
+#      - INFLUXDB_URL=http://influxdb:8086
+#      - INFLUXDB_USERNAME=${INFLUXDB_USERNAME}
+#      - INFLUXDB_PASSWORD=${INFLUXDB_PASSWORD}
+#    labels:  
+#      - "traefik.enable=true"
+#      - "traefik.http.routers.chronograf.entrypoints=websecure"
+#      - "traefik.http.routers.chronograf.rule=Host(`chronograf.${DOMAIN}`)"
+#      - "traefik.http.services.chronograf.loadbalancer.server.port=8888"
+#
+#  grafana:
+#    container_name: grafana
+#    image: grafana/grafana:7.5.7
+#    restart: unless-stopped
+#    volumes:
+#      - grafana-storage:/var/lib/grafana
+#      - ./data/grafana/provisioning/:/etc/grafana/provisioning
+#    environment:
+#      - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME}
+#      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+#    labels:  
+#      - "traefik.enable=true"
+#      - "traefik.http.routers.grafana.entrypoints=websecure"
+#      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)"
+#      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
+volumes:
+  uptime-kuma-storage:
+#  influxdb-storage:
+#  chronograf-storage:
+#  grafana-storage:

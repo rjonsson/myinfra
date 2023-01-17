@@ -1,0 +1,66 @@
+# meant to be used with traefik/authelia docker-compose.yaml as base
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:2023.1
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Stockholm
+    volumes:
+      - ./data/hass:/config
+    privileged: true
+    network_mode: host
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homeassistant.entrypoints=websecure"
+      - "traefik.http.routers.homeassistant.rule=Host(`home.${DOMAIN}`)"
+      - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
+      - "traefik.http.middlewares.homeassistant.headers.customFrameOptionsValue=SAMEORIGIN"
+
+  node-red:
+    container_name: node-red
+    image: nodered/node-red:3.0.2
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Stockholm
+    volumes:
+      - ./data/node-red/data:/data
+    expose:
+      - 1880
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.node-red.entrypoints=websecure"
+      - "traefik.http.routers.node-red.rule=Host(`node-red.${DOMAIN}`)"
+      - "traefik.http.services.node-red.loadbalancer.server.scheme=http"
+      - "traefik.http.services.node-red.loadbalancer.server.port=1880"
+
+  mqtt:
+    container_name: mosquitto
+    image: eclipse-mosquitto:2.0
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Stockholm
+    volumes:
+      - ./data/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    ports:
+      - 1883:1883/tcp
+
+  heimdall:
+    container_name: heimdall
+    image: ghcr.io/linuxserver/heimdall:2.4.13
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Stockholm
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ./data/heimdall:/config
+    expose:
+      - 80
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.heimdall.entrypoints=websecure"
+      - "traefik.http.routers.heimdall.rule=Host(`dashboard.${DOMAIN}`)"
+      - "traefik.http.services.heimdall.loadbalancer.server.scheme=http"
+      - "traefik.http.services.heimdall.loadbalancer.server.port=80"
+
