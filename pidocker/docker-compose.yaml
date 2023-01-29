@@ -3,7 +3,7 @@ services:
 
   deconz:
     container_name: deconz
-    image: deconzcommunity/deconz:stable 
+    image: deconzcommunity/deconz:2.20.01 
     restart: unless-stopped
     environment:
       - TZ=Europe/Stockholm
@@ -14,19 +14,41 @@ services:
     devices:
       - /dev/ttyACM0
 
-  homebridge:
-    container_name: homebridge
-    image: oznu/homebridge:latest
+  esphome:
+    container_name: esphome
+    image: esphome/esphome:2022.12
     restart: unless-stopped
+    privileged: true
     environment:
-      - TZ=Europe/Stockholm
-      - PGID=472
-      - PUID=472
-      - HOMEBRIDGE_CONFIG_UI=1
-      - HOMEBRIDGE_CONFIG_UI_PORT=8080
+      - ESPHOME_DASHBOARD_USE_PING=true
     volumes:
-      - ./data/homebridge:/homebridge
+      - ./data/esphome/config:/config
+      - /etc/localtime:/etc/localtime:ro
     network_mode: host
+
+networks:
+  default:
+    name: traefik
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.21.0.0/24
+          gateway: 172.21.0.1
+
+#  homebridge:
+#    container_name: homebridge
+#    image: oznu/homebridge:latest
+#    restart: unless-stopped
+#    environment:
+#      - TZ=Europe/Stockholm
+#      - PGID=472
+#      - PUID=472
+#      - HOMEBRIDGE_CONFIG_UI=1
+#      - HOMEBRIDGE_CONFIG_UI_PORT=8080
+#    volumes:
+#      - ./data/homebridge:/homebridge
+#    network_mode: host
 
 ## Samsung QN90 is not currently supported in HA
 #  nginx-proxy:
@@ -39,29 +61,19 @@ services:
 #      - '8001:8001'
 #      - '8002:8002'
 
-  ad-blocker:
-    container_name: pihole
-    image: pihole/pihole:latest
-    restart: unless-stopped
-    environment:
-      - TZ=Europe/Stockholm
-    volumes:
-      - ./data/pi-hole/etc-pihole:/etc/pihole
-      - ./data/pi-hole/etc-dnsmasq.d:/etc/dnsmasq.d
-    ports:
-      - "53:53/tcp"
-      - "53:53/udp"
-      - "67:67/udp"
-      - "7070:80/tcp"
-    cap_add:
-      - NET_ADMIN
-
-networks:
-  default:
-    name: traefik
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.21.0.0/24
-          gateway: 172.21.0.1
+#  ad-blocker:
+#    container_name: pihole
+#    image: pihole/pihole:latest
+#    restart: unless-stopped
+#    environment:
+#      - TZ=Europe/Stockholm
+#    volumes:
+#      - ./data/pi-hole/etc-pihole:/etc/pihole
+#      - ./data/pi-hole/etc-dnsmasq.d:/etc/dnsmasq.d
+#    ports:
+#      - "53:53/tcp"
+#      - "53:53/udp"
+#      - "67:67/udp"
+#      - "7070:80/tcp"
+#    cap_add:
+#      - NET_ADMIN
