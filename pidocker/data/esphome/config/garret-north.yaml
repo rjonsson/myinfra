@@ -1,5 +1,5 @@
 substitutions:
-  devicename: esp-garret-north
+  devicename: garret-north
 
 esphome:
   name: $devicename
@@ -18,7 +18,7 @@ wifi:
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
-    ssid: $devicename
+    ssid: "esp-${devicename}"
     password: !secret wifi_password
 
 mqtt:
@@ -36,7 +36,7 @@ logger:
 
 text_sensor:
   - platform: template
-    name: "uptime human readable"
+    name: "${devicename} uptime human readable"
     id: uptime_human
     icon: mdi:clock-start
     state_topic: esphome/$devicename/uptime_text
@@ -46,15 +46,15 @@ sensor:
     pin: D2
     model: AM2302
     temperature:
-      name: "temperature"
+      name: "${devicename} temperature"
     humidity:
-      name: "humidity"
+      name: "${devicename} humidity"
       accuracy_decimals: 1
   - platform: wifi_signal
-    name: "wifi signal"
+    name: "${devicename} wifi signal"
     state_topic: esphome/$devicename/rssi
   - platform:  uptime
-    name: "uptime sensor"
+    name: "${devicename} uptime sensor"
     id: uptime_sensor
     state_topic: esphome/$devicename/uptime
     on_raw_value:
