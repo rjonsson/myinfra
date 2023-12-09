@@ -1,5 +1,10 @@
 # Coredocker
 
+### Alias for multiple compose files
+```sh
+alias dcompose='docker compose -f docker-compose.yaml -f monitor-compose.yaml -f home-compose.yaml -f seed-compose.yaml'
+```
+
 ### Add backup cronjob
 ```sh
 # Create crontab for root and add rsync-script
