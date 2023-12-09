@@ -58,7 +58,7 @@ services:
   # Create new passwords with `docker run authelia/authelia:latest authelia hash-password 'password'`
   authelia:
     container_name: authelia
-    image: authelia/authelia:4.35
+    image: authelia/authelia:4.37
     restart: unless-stopped
     environment:
       - PUID=1000
