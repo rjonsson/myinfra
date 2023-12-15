@@ -1,0 +1,91 @@
+substitutions:
+  devicename: studio
+
+esphome:
+  name: $devicename
+
+esp8266:
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  manual_ip:
+    static_ip: 10.1.7.82
+    gateway: 10.1.7.1
+    subnet: 255.255.255.0
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "esp-${devicename}"
+    password: !secret wifi_password
+
+mqtt:
+  broker: !secret mqtt_broker
+  topic_prefix: esphome/$devicename
+
+ota:
+  password: !secret ota_password
+
+api:
+
+captive_portal:
+
+logger:
+
+i2c:
+  sda: D2
+  scl: D1
+  scan: false
+
+text_sensor:
+  - platform: template
+    name: "${devicename} uptime human readable"
+    id: uptime_human
+    icon: mdi:clock-start
+    state_topic: esphome/$devicename/uptime_text
+
+sensor:
+  - platform: bme280
+    address: 0x76
+    temperature:
+      name: "${devicename} temperature"
+      oversampling: 16x
+      filters:
+        - offset: -5.5
+    pressure:
+      name: "${devicename} pressure"
+    humidity:
+      name: "${devicename} humidity"
+  - platform: bh1750
+    address: 0x23
+    name: "${devicename} illuminance"
+  - platform: wifi_signal
+    name: "${devicename} wifi signal"
+    state_topic: esphome/$devicename/rssi
+  - platform:  uptime
+    name: "${devicename} uptime sensor"
+    id: uptime_sensor
+    state_topic: esphome/$devicename/uptime
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: uptime_human
+            state: !lambda |-
+              int seconds = round(id(uptime_sensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds /  60;
+              seconds = seconds % 60;
+              return (
+                (days ? String(days) + "d " : "") +
+                (hours ? String(hours) + "h " : "") +
+                (minutes ? String(minutes) + "m " : "") +
+                (String(seconds) + "s")
+              ).c_str();
+    filters:
+      - lambda: return x / 60;
+    unit_of_measurement: "m"
