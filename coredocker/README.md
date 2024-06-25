@@ -3,7 +3,24 @@
 ### Alias for multiple compose files
 ```sh
 alias dcompose='docker compose -f docker-compose.yaml -f monitor-compose.yaml -f home-compose.yaml -f seed-compose.yaml'
+
+
+alias dcomposea='{ IFS= read -r D && pushd /myinfra/coredocker/ && \
+    docker compose -f docker-compose.yaml -f monitor-compose.yaml -f home-compose.yaml -f seed-compose.yaml "$D"; \
+	&& popd; } <<<'
+
+
+alias dcompose='docker compose -f docker-compose.yaml -f monitor-compose.yaml -f home-compose.yaml -f seed-compose.yaml'
+
+alias dcompose='{ IFS= read -r ARG && pushd ${ARG}"; ls; echo "hej"; && popd "$ARG"; } <<<'
+
+alias dcompose='docker compose -f /myinfra/coredocker/docker-compose.yaml -f /myinfra/coredocker/monitor-compose.yaml -f /myinfra/coredocker/home-compose.yaml -f /myinfra/coredocker/seed-compose.yaml'
+
+
 ```
+
+
+
 
 ### Add backup cronjob
 ```sh

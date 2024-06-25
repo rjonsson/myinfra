@@ -2,7 +2,7 @@
 services:
   wireguard:
     container_name: wireguard
-    image: ghcr.io/linuxserver/wireguard:1.0.20210914
+    image: lscr.io/linuxserver/wireguard:1.0.20210914
     restart: unless-stopped
     environment:
       - TZ=Europe/Stockholm
@@ -13,7 +13,7 @@ services:
       - /lib/modules:/lib/modules
     expose:
       - 9091 #transmission
-      - 9117 #jackett
+      - 9696 #prowlarr
       - 8989 #sonarr
       - 7878 #radarr
     networks:
@@ -39,13 +39,13 @@ services:
       - 'traefik.http.routers.transmission.middlewares=authelia@docker'
       - "traefik.http.services.transmission.loadbalancer.server.scheme=http"
       - "traefik.http.services.transmission.loadbalancer.server.port=9091"
-      # jackett endpoint
-      - "traefik.http.routers.jackett.entrypoints=websecure"
-      - "traefik.http.routers.jackett.rule=Host(`jackett.${DOMAIN}`)"
-      - "traefik.http.routers.jackett.service=jackett"
-      - "traefik.http.routers.jackett.middlewares=authelia@docker"
-      - "traefik.http.services.jackett.loadbalancer.server.scheme=http"
-      - "traefik.http.services.jackett.loadbalancer.server.port=9117"
+       # prowlarr endpoint
+      - "traefik.http.routers.prowlarr.entrypoints=websecure"
+      - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.${DOMAIN}`)"
+      - "traefik.http.routers.prowlarr.service=prowlarr"
+      - "traefik.http.routers.prowlarr.middlewares=authelia@docker"
+      - "traefik.http.services.prowlarr.loadbalancer.server.scheme=http"
+      - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
       # sonarr endpoint
       - "traefik.http.routers.sonarr.entrypoints=websecure"
       - "traefik.http.routers.sonarr.rule=Host(`sonarr.${DOMAIN}`)"
@@ -63,7 +63,7 @@ services:
 
   # https://hub.docker.com/r/linuxserver/transmission
   transmission:
-    image: ghcr.io/linuxserver/transmission:version-3.00-r5
+    image: lscr.io/linuxserver/transmission:4.0.5
     container_name: transmission
     restart: unless-stopped
     depends_on: [ "wireguard" ]
@@ -71,16 +71,15 @@ services:
       - TZ=Europe/Stockholm
       - PUID=1000
       - PGID=1000
-      - TRANSMISSION_WEB_HOME=/combustion-release/
+      #- TRANSMISSION_WEB_HOME=/combustion-release/
     volumes:
       - ./data/transmission/config:/config
       - /mnt/nfs/download:/downloads
     network_mode: "service:wireguard"
 
-  # https://hub.docker.com/r/linuxserver/jackett
-  jackett:
-    container_name: jackett
-    image: ghcr.io/linuxserver/jackett:0.20.1768
+  prowlarr:
+    container_name: prowlarr
+    image: lscr.io/linuxserver/prowlarr:1.10.5.4116-ls43
     restart: unless-stopped
     depends_on: [ "wireguard" ]
     environment:
@@ -88,13 +87,13 @@ services:
       - PUID=1000
       - PGID=1000
     volumes:
-      - ./data/jackett:/config
+      - ./data/prowlarr:/config
     network_mode: "service:wireguard"
 
   # https://hub.docker.com/r/linuxserver/sonarr
   sonarr:
     container_name: sonarr
-    image: ghcr.io/linuxserver/sonarr:3.0.9
+    image: lscr.io/linuxserver/sonarr:3.0.10
     restart: unless-stopped
     depends_on: [ "wireguard" ]
     environment:
@@ -109,7 +108,7 @@ services:
 
   radarr:
     container_name: radarr
-    image: ghcr.io/linuxserver/radarr:4.1.0
+    image: lscr.io/linuxserver/radarr:5.1.3
     restart: unless-stopped
     depends_on: [ "wireguard" ]
     environment:
@@ -124,7 +123,7 @@ services:
 
   plex:
     container_name: plex
-    image: ghcr.io/linuxserver/plex:1.28.1
+    image: lscr.io/linuxserver/plex:1.32.7
     restart: unless-stopped
     environment:
       - PUID=1000
@@ -136,11 +135,27 @@ services:
       - /mnt/nfs/tv:/tv
       - /mnt/nfs/movies:/movies
       - /mnt/ramdisk:/ramdisk
-    #devices:
-    #  - /dev/dri:/dev/dri
     network_mode: host
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.plex.entrypoints=websecure"
       - "traefik.http.routers.plex.rule=Host(`plex.${DOMAIN}`)"
       - "traefik.http.services.plex.loadbalancer.server.port=32400"
+
+  archivebox:
+    container_name: archivebox
+    image: archivebox/archivebox:0.7
+    command: server --quick-init 0.0.0.0:8000
+    volumes:
+      - ./data/archivebox:/data
+    environment:
+      - ALLOWED_HOSTS=*
+      - PUID=1000
+      - PGID=1000
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.archivebox.entrypoints=websecure"
+      - "traefik.http.routers.archivebox.rule=Host(`archivebox.${DOMAIN}`)"
+      - "traefik.http.services.archivebox.loadbalancer.server.port=8000"
